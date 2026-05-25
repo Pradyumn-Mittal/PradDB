@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="PradDB/PradDB.vcxproj" Id="d54a13be-4b68-4673-bbaf-b4d49e370bf6" />
+</Solution>
