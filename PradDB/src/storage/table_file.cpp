@@ -3,6 +3,7 @@
 #include "page.h"
 #include "serializer.h"
 #include <iostream>
+#include <array>
 
 #include <fstream>
 
@@ -55,10 +56,10 @@ bool TableFile::appendRow(
     return false;
   }
 
-  file.seekg(0, std::ios::end);
+  file.seekp(0, std::ios::end);
 
   std::streampos file_size =
-    file.tellg();
+    file.tellp();
 
   size_t total_pages =
     static_cast<size_t>(file_size) /
@@ -77,7 +78,7 @@ bool TableFile::appendRow(
     last_page_index * PAGE_SIZE
   );
 
-  std::vector<char> buffer(PAGE_SIZE);
+  std::array<char, PAGE_SIZE> buffer;
 
   file.read(
     buffer.data(),
@@ -86,7 +87,12 @@ bool TableFile::appendRow(
 
   SlottedPage page;
 
-  page.deserialize(buffer);
+  page.deserialize(
+    std::vector<char>(
+      buffer.begin(),
+      buffer.end()
+    )
+  );
 
   std::string row =
     Serializer::serializeRow(values);
@@ -112,7 +118,8 @@ bool TableFile::appendRow(
     return true;
   }
 
-  auto bytes = page.serialize();
+  auto bytes =
+    page.serialize();
 
   file.seekp(
     last_page_index * PAGE_SIZE

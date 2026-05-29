@@ -54,9 +54,9 @@ void Executor::execute(const std::string& input) {
   }
   catch (const std::runtime_error& e) {
     // This catches the "Unexpected token" error from your consume function
-    std::cerr << "SQL Error: \n" << e.what() << std::endl;
+    std::cerr << "SQL Error: \n" << e.what() << "\n";
   }
   catch (...) {
-    std::cerr << "An unknown error occurred during execution.\n" << std::endl;
+    std::cerr << "An unknown error occurred during execution.\n" << "\n";
   }
 }

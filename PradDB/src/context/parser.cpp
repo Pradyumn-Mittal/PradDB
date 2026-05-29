@@ -4,9 +4,9 @@ command SQLParser::parse(const std::string& input) {
   pos = 0;
   _tokens = makeToken(input);
 
-  //std::cout << "Lexer found " << _tokens.size() << " tokens." << std::endl;
+  //std::cout << "Lexer found " << _tokens.size() << " tokens." << "\n";
   //for (const auto& t : _tokens) std::cout << "[" << t.value << "] ";
-  //std::cout << std::endl;
+  //std::cout << "\n";
 
   if (is_at_end()) {
     throw std::runtime_error("Empty query");
@@ -117,7 +117,7 @@ SelectCmd SQLParser::parseSelect() {
       cond.op = op.value;
 
       Token val = advance(); // should validate literal/identifier
-      std::cout << "Condition value token: [" << val.value << "] of type " << static_cast<int>(val.type) << std::endl;
+      std::cout << "Condition value token: [" << val.value << "] of type " << static_cast<int>(val.type) << "\n";
       if (val.value.empty() or val.type == TokenType::SEMICOLON) throw std::runtime_error("Invalid Syntax");
       cond.value = val.value;
 

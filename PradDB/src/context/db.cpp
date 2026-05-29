@@ -5,6 +5,9 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <thread>
+#include <chrono>
+#include <system_error>
 
 using namespace std;
 
@@ -49,13 +52,11 @@ bool DB::createTable(
       << "|"
       << static_cast<int>(col.type)
       << "\n";
-    std::cout
-      << "WRITING COLUMN = "
-      << col.name
-      << "\n";
+    //std::cout
+    //  << "WRITING COLUMN = "
+    //  << col.name
+    //  << "\n";
   }
-  meta.flush();
-  
 
   meta.close();
 
@@ -117,10 +118,10 @@ Table* DB::getTable(
 
     while (std::getline(meta, line))
     {
-      std::cout
-        << "LOADED META LINE = "
-        << line
-        << "\n";
+      //std::cout
+      //  << "LOADED META LINE = "
+      //  << line
+      //  << "\n";
 
       size_t pos =
         line.find('|');
@@ -144,10 +145,10 @@ Table* DB::getTable(
         static_cast<DataType>(type);
 
       table.columns.push_back(col);
-      std::cout
-        << "LOADED COLUMN = "
-        << col.name
-        << "\n";
+    //  std::cout
+    //    << "LOADED COLUMN = "
+    //    << col.name
+    //    << "\n";
     }
 
     meta.close();
@@ -169,20 +170,39 @@ bool DB::dropTable(
 {
   auto it = tables.find(name);
 
-  if (it != tables.end())
+  if (it == tables.end())
   {
-    tables.erase(it);
+    std::string path =
+      name + ".tbl";
+
+    if (!std::filesystem::exists(path))
+    {
+      return false;
+    }
   }
 
+  // REMOVE FROM MEMORY FIRST
+  tables.erase(name);
+
+  // FORCE TEMPORARY FILE HANDLE RELEASE
+  std::this_thread::sleep_for(
+    std::chrono::milliseconds(1)
+  );
+
+  std::error_code ec1;
+  std::error_code ec2;
+
   std::filesystem::remove(
-    name + ".tbl"
+    name + ".tbl",
+    ec1
   );
 
   std::filesystem::remove(
-    name + ".meta"
+    name + ".meta",
+    ec2
   );
 
   Cm.remove_table(name);
 
-  return true;
+  return !ec1;
 }
