@@ -1,11 +1,15 @@
+
 #pragma once
+
 #include <string>
-#include <variant>
 #include <vector>
 #include <unordered_map>
-#include <optional>
+#include <variant>
 
-enum class DataType { INT, STRING };
+enum class DataType {
+  INT = 0,
+  STRING = 1
+};
 
 using Cell = std::variant<int, std::string>;
 
@@ -21,17 +25,33 @@ struct Row {
 struct Table {
   std::string name;
   std::vector<Column> columns;
-  std::vector<Row> rows;
+
+  std::string filePath;
+
+  uint32_t pageCount = 0;
 };
 
 class DB {
   std::unordered_map<std::string, Table> tables;
 
 public:
-  bool createTable(const std::string&, const std::vector<Column>&);
-  bool insert(const std::string&, const std::vector<std::string>&);
-  const Table* getTable(const std::string&) const;
 
-  bool tableExists(const std::string&) const;
-  const std::unordered_map<std::string, Table>& getTables() const;
+  void loadAllTables();
+
+  bool createTable(
+    const std::string& name,
+    const std::vector<Column>& columns);
+
+  bool insert(
+    const std::string& tableName,
+    const std::vector<std::string>& rawValues);
+
+  std::vector<Row> scanTable(
+    const std::string& tableName);
+
+  Table* getTable(
+    const std::string& name);
+
+  bool tableExists(
+    const std::string& name) const;
 };

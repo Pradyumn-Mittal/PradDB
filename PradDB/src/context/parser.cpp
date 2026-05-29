@@ -71,7 +71,10 @@ SelectCmd SQLParser::parseSelect() {
 
   // Parse column list
   if (peek().value == "*") {
-    advance(); // SELECT *
+
+    cmd.column_names.push_back("*");
+
+    advance();
   }
   else {
     while (true) {
@@ -112,7 +115,8 @@ SelectCmd SQLParser::parseSelect() {
       cond.op = op.value;
 
       Token val = advance(); // should validate literal/identifier
-      if ((val.value).size() < 1) throw std::runtime_error("Invalid Syntax");
+      std::cout << "Condition value token: [" << val.value << "] of type " << static_cast<int>(val.type) << std::endl;
+      if (val.value.empty() or val.type == TokenType::SEMICOLON) throw std::runtime_error("Invalid Syntax");
       cond.value = val.value;
 
       cmd.condition.push_back(cond);

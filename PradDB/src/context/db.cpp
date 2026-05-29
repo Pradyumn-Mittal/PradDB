@@ -1,54 +1,157 @@
 #include "../includes/db.h"
-#include <stdexcept>
 
-bool DB::createTable(const std::string& name, const std::vector<Column>& columns) {
-  if (tableExists(name)) return false;
+#include "../storage/table_file.h"
 
-  tables.emplace(name, Table{ name, columns, {} });
-  return true;
-}
+#include <filesystem>
+#include <iostream>
+#include <fstream>
 
-bool DB::insert(const std::string& tableName, const std::vector<std::string>& rawValues) {
-  auto it = tables.find(tableName);
-  if (it == tables.end()) return false;
+using namespace std;
 
-  Table& table = it->second;
-  if (rawValues.size() != table.columns.size()) return false;
-
-  Row newRow;
-  newRow.values.reserve(rawValues.size());
-
-  try {
-    for (size_t i = 0; i < rawValues.size(); ++i) {
-      if (table.columns[i].type == DataType::INT) {
-        newRow.values.emplace_back(std::stoi(rawValues[i]));
-      }
-      else {
-        newRow.values.emplace_back(rawValues[i]);
-      }
-    }
-  }
-  catch (const std::invalid_argument&) {
-    return false;
-  }
-  catch (const std::out_of_range&) {
+bool DB::createTable(
+  const std::string& table_name,
+  const std::vector<Column>& columns
+)
+{
+  if (tables.find(table_name) != tables.end())
+  {
     return false;
   }
 
-  table.rows.emplace_back(std::move(newRow));
+  std::string path = table_name + ".tbl";
+
+  Table table;
+
+  table.name = table_name;
+  table.filePath = path;
+  table.columns = columns;
+
+  TableFile file(path);
+
+  if (!file.create())
+  {
+    return false;
+  }
+
+  std::ofstream meta(
+    table_name + ".meta"
+  );
+
+  if (!meta.is_open())
+  {
+    return false;
+  }
+
+  for (const auto& col : columns)
+  {
+    meta
+      << col.name
+      << "|"
+      << static_cast<int>(col.type)
+      << "\n";
+    std::cout
+      << "WRITING COLUMN = "
+      << col.name
+      << "\n";
+  }
+  meta.flush();
+  
+
+  meta.close();
+
+  tables[table_name] = table;
+
   return true;
 }
 
-const Table* DB::getTable(const std::string& name) const {
+bool DB::insert(
+  const std::string& table_name,
+  const std::vector<std::string>& values
+)
+{
+  Table* table = getTable(table_name);
+
+  if (table == nullptr)
+  {
+    return false;
+  }
+
+  TableFile file(table->filePath);
+
+  return file.appendRow(values);
+}
+
+Table* DB::getTable(
+  const std::string& name
+)
+{
   auto it = tables.find(name);
-  if (it == tables.end()) return nullptr;
-  return &it->second;
-}
 
-bool DB::tableExists(const std::string& name) const {
-  return tables.find(name) != tables.end();
-}
+  if (it != tables.end())
+  {
+    return &it->second;
+  }
 
-const std::unordered_map<std::string, Table>& DB::getTables() const {
-  return tables;
-} 
+  std::string path =
+    name + ".tbl";
+
+  if (!std::filesystem::exists(path))
+  {
+    return nullptr;
+  }
+
+  Table table;
+
+  table.name = name;
+  table.filePath = path;
+
+  std::ifstream meta(
+    name + ".meta"
+  );
+
+  if (meta.is_open())
+  {
+    std::string line;
+
+    while (std::getline(meta, line))
+    {
+      std::cout
+        << "LOADED META LINE = "
+        << line
+        << "\n";
+
+      size_t pos =
+        line.find('|');
+
+      if (pos == std::string::npos)
+      {
+        continue;
+      }
+
+      Column col;
+
+      col.name =
+        line.substr(0, pos);
+
+      int type =
+        std::stoi(
+          line.substr(pos + 1)
+        );
+
+      col.type =
+        static_cast<DataType>(type);
+
+      table.columns.push_back(col);
+      std::cout
+        << "LOADED COLUMN = "
+        << col.name
+        << "\n";
+    }
+
+    meta.close();
+  }
+
+  tables[name] = table;
+
+  return &tables[name];
+}

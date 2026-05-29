@@ -15,7 +15,11 @@ void runDB() {
     if (toUpper(input) == "EXIT") {
       break;
     }
-
-    executor.execute(input);
+    try{
+      executor.execute(input);
+    }
+    catch (const std::exception& e) {
+      std::cerr << "Error: " << e.what() << "\n\n";
+    }
   }
 }

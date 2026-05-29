@@ -1,126 +1,397 @@
 #include "../includes/display.h"
+
+#include "../storage/table_file.h"
+
 #include <iostream>
-#include <unordered_map>
-#include <sstream>
+#include <iomanip>
+#include <algorithm>
+#include <cctype>
 
-
-// Assumes Cell = std::variant<int, double, std::string> (or similar)
-
-bool evaluateCondition(const Cell& cell, const Condition& cond) {
-  return std::visit([&](auto&& value) -> bool {
-    using T = std::decay_t<decltype(value)>;
-
-    std::stringstream ss(cond.value);
-    T rhs{};
-
-    ss >> rhs;
-
-    if (cond.op == "=") return value == rhs;
-    if (cond.op == ">") return value > rhs;
-    if (cond.op == "<") return value < rhs;
-
-    return false;
-    }, cell);
-}
-
-void printTable(DB& db,
-  const std::string& table_name,
-  const std::vector<std::string>& column_names,
-  const std::vector<Condition>& conditions)
+static bool checkCondition(
+  const std::vector<std::string>& row,
+  const Table& table,
+  const std::vector<Condition>& conditions
+)
 {
-  const Table* table = db.getTable(table_name);
-
-  if (!table) {
-    std::cerr << "Error: Table '" << table_name << "' not found.\n";
-    return;
+  if (conditions.empty())
+  {
+    return true;
   }
 
-  const auto& cols = table->columns;
-  const auto& rows = table->rows;
+  for (const auto& cond : conditions)
+  {
+    int column_index = -1;
 
-  // ---------------------------
-  // Build column name → index map (O(n))
-  // ---------------------------
-  std::unordered_map<std::string, int> col_index_map;
-  for (size_t i = 0; i < cols.size(); ++i) {
-    col_index_map[cols[i].name] = static_cast<int>(i);
-  }
+    for (size_t i = 0; i < table.columns.size(); i++)
+    {
+      if (table.columns[i].name == cond.column)
+      {
+        column_index =
+          static_cast<int>(i);
 
-  // ---------------------------
-  // Resolve selected columns
-  // ---------------------------
-  std::vector<int> selected_indices;
-
-  if (column_names.empty()) {
-    selected_indices.reserve(cols.size());
-    for (int i = 0; i < cols.size(); i++)
-      selected_indices.push_back(i);
-  }
-  else {
-    selected_indices.reserve(column_names.size());
-
-    for (const auto& name : column_names) {
-      auto it = col_index_map.find(name);
-      if (it == col_index_map.end()) {
-        std::cerr << "Error: Column '" << name << "' not found.\n";
-        return;
-      }
-      selected_indices.push_back(it->second);
-    }
-  }
-
-  // ---------------------------
-  // Pre-resolve condition column indices
-  // ---------------------------
-  struct CompiledCondition {
-    int col_index;
-    Condition cond;
-  };
-
-  std::vector<CompiledCondition> compiled_conditions;
-  compiled_conditions.reserve(conditions.size());
-
-  for (const auto& cond : conditions) {
-    auto it = col_index_map.find(cond.column);
-    if (it == col_index_map.end()) {
-      std::cerr << "Error: Column '" << cond.column << "' not found in WHERE.\n";
-      return;
-    }
-
-    compiled_conditions.push_back({ it->second, cond });
-  }
-
-  // ---------------------------
-  // Header
-  // ---------------------------
-  for (int idx : selected_indices) {
-    std::cout << cols[idx].name << "\t";
-  }
-  std::cout << "\n";
-
-  // ---------------------------
-  // Rows
-  // ---------------------------
-  for (const auto& row : rows) {
-
-    // WHERE filtering (AND logic)
-    bool match = true;
-    for (const auto& cc : compiled_conditions) {
-      if (!evaluateCondition(row.values[cc.col_index], cc.cond)) {
-        match = false;
         break;
       }
     }
 
-    if (!match) continue;
-
-    // Print selected columns only
-    for (int idx : selected_indices) {
-      std::visit([](auto&& arg) {
-        std::cout << arg << "\t";
-        }, row.values[idx]);
+    if (column_index == -1)
+    {
+      return false;
     }
 
-    std::cout << "\n\n";
+    const std::string& row_value =
+      row[column_index];
+
+    const std::string& condition_value =
+      cond.value;
+
+    if (cond.op == "=")
+    {
+      if (row_value != condition_value)
+      {
+        return false;
+      }
+    }
+    else if (cond.op == "!=")
+    {
+      if (row_value == condition_value)
+      {
+        return false;
+      }
+    }
+    else if (cond.op == ">")
+    {
+      if (!(std::stoi(row_value) >
+        std::stoi(condition_value)))
+      {
+        return false;
+      }
+    }
+    else if (cond.op == "<")
+    {
+      if (!(std::stoi(row_value) <
+        std::stoi(condition_value)))
+      {
+        return false;
+      }
+    }
+    else if (cond.op == ">=")
+    {
+      if (!(std::stoi(row_value) >=
+        std::stoi(condition_value)))
+      {
+        return false;
+      }
+    }
+    else if (cond.op == "<=")
+    {
+      if (!(std::stoi(row_value) <=
+        std::stoi(condition_value)))
+      {
+        return false;
+      }
+    }
+    else
+    {
+      return false;
+    }
   }
+
+  return true;
+}
+
+
+void printTable(
+  DB& db,
+  const std::string& table_name,
+  const std::vector<std::string>& column_names,
+  const std::vector<Condition>& conditions
+)
+{
+  std::cout << "NEW DISPLAY CPP LOADED\n";
+  Table* table =
+    db.getTable(table_name);
+
+  if (table == nullptr)
+  {
+    std::cout << "Table not found.\n";
+    return;
+  }
+
+  TableFile file(
+    table->filePath
+  );
+
+  auto rows =
+    file.readAllRows();
+
+  if (rows.empty())
+  {
+    std::cout << "Empty table.\n";
+    return;
+  }
+
+  std::cout
+    << "COLUMN COUNT = "
+    << table->columns.size()
+    << "\n";
+
+  for (const auto& col : table->columns)
+  {
+    std::cout
+      << "COLUMN = ["
+      << col.name
+      << "]\n";
+  }
+
+  std::vector<int> selected_indices;
+
+  bool select_all = false;
+
+  if (column_names.empty())
+  {
+    select_all = true;
+  }
+  else
+  {
+    bool all_empty = true;
+
+    for (const auto& raw : column_names)
+    {
+      std::string cleaned;
+
+      for (char ch : raw)
+      {
+        if (
+          !std::isspace(
+            static_cast<unsigned char>(ch)
+          )
+          &&
+          ch != ';'
+          )
+        {
+          cleaned += ch;
+        }
+      }
+
+      std::cout
+        << "RAW TOKEN = ["
+        << raw
+        << "]\n";
+
+      std::cout
+        << "CLEANED TOKEN = ["
+        << cleaned
+        << "]\n";
+
+      if (!cleaned.empty())
+      {
+        all_empty = false;
+      }
+
+      if (cleaned == "*")
+      {
+        select_all = true;
+      }
+    }
+
+    if (all_empty)
+    {
+      select_all = true;
+    }
+  }
+
+  if (select_all)
+  {
+    std::cout
+      << "SELECT ALL ACTIVE\n";
+
+    for (
+      size_t i = 0;
+      i < table->columns.size();
+      i++
+      )
+    {
+      selected_indices.push_back(
+        static_cast<int>(i)
+      );
+
+      std::cout
+        << "SELECTED INDEX = "
+        << i
+        << "\n";
+    }
+  }
+  else
+  {
+    for (const auto& raw_name : column_names)
+    {
+      std::string cleaned;
+
+      for (char ch : raw_name)
+      {
+        if (
+          !std::isspace(
+            static_cast<unsigned char>(ch)
+          )
+          &&
+          ch != ';'
+          )
+        {
+          cleaned += ch;
+        }
+      }
+
+      for (
+        size_t i = 0;
+        i < table->columns.size();
+        i++
+        )
+      {
+        if (
+          table->columns[i].name
+          ==
+          cleaned
+          )
+        {
+          selected_indices.push_back(
+            static_cast<int>(i)
+          );
+
+          std::cout
+            << "MATCHED COLUMN = "
+            << cleaned
+            << "\n";
+        }
+      }
+    }
+  }
+
+  std::cout
+    << "FINAL SELECTED COUNT = "
+    << selected_indices.size()
+    << "\n";
+  
+
+  std::vector<size_t> widths(
+    selected_indices.size(),
+    5
+  );
+
+  for (
+    size_t i = 0;
+    i < selected_indices.size();
+    i++
+    )
+  {
+    widths[i] =
+      table->columns[
+        selected_indices[i]
+      ].name.size();
+  }
+
+  for (const auto& row : rows)
+  {
+    if (!checkCondition(
+      row,
+      *table,
+      conditions
+    ))
+    {
+      continue;
+    }
+
+    for (
+      size_t i = 0;
+      i < selected_indices.size();
+      i++
+      )
+    {
+      int index =
+        selected_indices[i];
+
+      widths[i] =
+        std::max(
+          widths[i],
+          row[index].size()
+        );
+    }
+  }
+
+  std::cout << "\n";
+
+  for (size_t i = 0; i < widths.size(); i++)
+  {
+    std::cout
+      << "+"
+      << std::string(widths[i] + 2, '-');
+  }
+
+  std::cout << "+\n";
+
+  for (
+    size_t i = 0;
+    i < selected_indices.size();
+    i++
+    )
+  {
+    std::cout
+      << "| "
+      << std::left
+      << std::setw((int)widths[i])
+      << table->columns[
+        selected_indices[i]
+      ].name
+      << " ";
+  }
+
+  std::cout << "|\n";
+
+  for (size_t i = 0; i < widths.size(); i++)
+  {
+    std::cout
+      << "+"
+      << std::string(widths[i] + 2, '-');
+  }
+
+  std::cout << "+\n";
+
+  for (const auto& row : rows)
+  {
+    if (!checkCondition(
+      row,
+      *table,
+      conditions
+    ))
+    {
+      continue;
+    }
+
+    for (
+      size_t i = 0;
+      i < selected_indices.size();
+      i++
+      )
+    {
+      int index =
+        selected_indices[i];
+
+      std::cout
+        << "| "
+        << std::left
+        << std::setw((int)widths[i])
+        << row[index]
+        << " ";
+    }
+
+    std::cout << "|\n";
+  }
+
+  for (size_t i = 0; i < widths.size(); i++)
+  {
+    std::cout
+      << "+"
+      << std::string(widths[i] + 2, '-');
+  }
+
+  std::cout << "+\n\n";
 }

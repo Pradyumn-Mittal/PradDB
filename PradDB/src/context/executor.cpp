@@ -30,6 +30,13 @@ void Executor::execute(const std::string& input) {
         }
       }
       else if constexpr (std::is_same_v<T, SelectCmd>) {
+        const Table* table = db.getTable(arg.table_name);
+
+        if (table == nullptr) {
+          std::cout << "Error: Table '" << arg.table_name << "' not found.\n";
+          return;
+        }
+
         printTable(db, arg.table_name, arg.column_names, arg.condition);
       }
       }, cmd);
