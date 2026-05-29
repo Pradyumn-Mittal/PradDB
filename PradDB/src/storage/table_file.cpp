@@ -175,11 +175,6 @@ TableFile::readAllRows()
       {
         continue;
       }
-      
-      std::cout
-        << "RAW ROW = ["
-        << raw
-        << "]\n";
 
       rows.push_back(
         Serializer::deserializeRow(raw)

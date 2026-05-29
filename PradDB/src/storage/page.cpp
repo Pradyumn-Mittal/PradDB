@@ -41,10 +41,6 @@ bool SlottedPage::insert_row(
   Slot slot;
 
   slot.offset = header.free_space_pointer;
-  std::cout
-    << "INSERT OFFSET = "
-    << slot.offset
-    << "\n";
   slot.size = row_size;
   slot.is_deleted = 0;
 
@@ -70,11 +66,6 @@ std::string SlottedPage::read_row(
   {
     return "";
   }
-
-  std::cout
-    << "READ OFFSET = "
-    << slot.offset
-    << "\n";
 
   std::string row;
 
