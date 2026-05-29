@@ -39,6 +39,17 @@ void Executor::execute(const std::string& input) {
 
         printTable(db, arg.table_name, arg.column_names, arg.condition);
       }
+      else if constexpr (std::is_same_v<T, ShowTablesCmd>) {
+        showTables(db);
+      }
+      else if constexpr (std::is_same_v<T, DropTableCmd>) {
+        if (db.dropTable(arg.table_name)) {
+          std::cout << "Dropped table " << arg.table_name << " successfully.\n\n";
+        }
+        else {
+          std::cout << "Failed to drop table " << arg.table_name << ". It may not exist.\n\n";
+        }
+      }
       }, cmd);
   }
   catch (const std::runtime_error& e) {

@@ -37,6 +37,8 @@ class SQLParser {
   CreateCmd parseCreate();
   InsertCmd parseInsert();
   SelectCmd parseSelect();
+  ShowTablesCmd parseShowTables();
+  DropTableCmd parseDropTable();
 
 public:
   command parse(const std::string& input);

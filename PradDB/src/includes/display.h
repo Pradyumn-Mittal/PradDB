@@ -10,3 +10,7 @@ void printTable(
   const std::vector<std::string>& column_names,
   const std::vector<Condition>& conditions
 );
+
+void showTables(
+  DB& db
+);

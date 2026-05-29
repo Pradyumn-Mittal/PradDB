@@ -395,3 +395,21 @@ void printTable(
 
   std::cout << "+\n\n";
 }
+
+void showTables(
+  DB& db
+)
+{
+  auto& tables = db.show_tables();
+  if (tables.empty())
+  {
+    std::cout << "No tables found.\n";
+    return;
+  }
+  std::cout << "Tables:\n";
+  for (const auto& name : tables)
+  {
+    std::cout << "- " << name << "\n";
+  }
+  std::cout << "\n";
+}

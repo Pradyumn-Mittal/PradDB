@@ -27,7 +27,9 @@ struct Token {
 static const std::unordered_set<std::string> keywords = {
     "CREATE", "TABLE",
     "INSERT", "INTO", "VALUES",
-    "SELECT", "FROM", "WHERE"
+    "SELECT", "FROM", "WHERE",
+    "SHOW", "TABLES",
+    "DROP", "TABLE"
 };
 
 std::string toUpper(std::string s);

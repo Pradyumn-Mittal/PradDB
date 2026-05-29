@@ -7,6 +7,8 @@ enum class CommandType {
   CREATE,
   INSERT,
   SELECT,
+  SHOW_TABLES,
+  DROP_TABLE,
   INVALID
 };
 
@@ -32,4 +34,10 @@ struct SelectCmd {
   std::vector<Condition> condition;
 };
 
-using command = std::variant<CreateCmd, InsertCmd, SelectCmd>;
+struct ShowTablesCmd {};
+
+struct DropTableCmd {
+  std::string table_name;
+};
+
+using command = std::variant<CreateCmd, InsertCmd, SelectCmd, ShowTablesCmd, DropTableCmd>;

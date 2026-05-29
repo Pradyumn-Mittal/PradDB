@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "CatalogManager.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -33,11 +34,9 @@ struct Table {
 
 class DB {
   std::unordered_map<std::string, Table> tables;
+  CatalogManager Cm;
 
 public:
-
-  void loadAllTables();
-
   bool createTable(
     const std::string& name,
     const std::vector<Column>& columns);
@@ -46,12 +45,14 @@ public:
     const std::string& tableName,
     const std::vector<std::string>& rawValues);
 
-  std::vector<Row> scanTable(
-    const std::string& tableName);
-
   Table* getTable(
     const std::string& name);
 
-  bool tableExists(
-    const std::string& name) const;
+  const std::vector<std::string>& show_tables() {
+    return Cm.get_all_tables();
+  }
+
+  bool dropTable(
+    const std::string& name);
+
 };

@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\context\CatalogManager.cpp" />
     <ClCompile Include="src\context\display.cpp" />
     <ClCompile Include="src\context\executor.cpp" />
     <ClCompile Include="src\includes\display.h" />
@@ -139,6 +140,7 @@
     <ClCompile Include="src\storage\table_file.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\includes\CatalogManager.h" />
     <ClInclude Include="src\includes\executor.h" />
     <ClInclude Include="src\includes\commands.h" />
     <ClInclude Include="src\includes\run.h" />

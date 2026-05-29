@@ -61,6 +61,8 @@ bool DB::createTable(
 
   tables[table_name] = table;
 
+  Cm.register_table(table_name);
+
   return true;
 }
 
@@ -153,5 +155,34 @@ Table* DB::getTable(
 
   tables[name] = table;
 
+  if (!Cm.table_exists(name))
+  {
+    Cm.register_table(name);
+  }
+
   return &tables[name];
+}
+
+bool DB::dropTable(
+  const std::string& name
+)
+{
+  auto it = tables.find(name);
+
+  if (it != tables.end())
+  {
+    tables.erase(it);
+  }
+
+  std::filesystem::remove(
+    name + ".tbl"
+  );
+
+  std::filesystem::remove(
+    name + ".meta"
+  );
+
+  Cm.remove_table(name);
+
+  return true;
 }

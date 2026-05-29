@@ -16,6 +16,8 @@ command SQLParser::parse(const std::string& input) {
   if (cmd == "CREATE") return parseCreate();
   if (cmd == "INSERT") return parseInsert();
   if (cmd == "SELECT") return parseSelect();
+  if (cmd == "SHOW") return parseShowTables();
+  if (cmd == "DROP") return parseDropTable();
   throw std::runtime_error("Unknown command: " + cmd);
 }
 
@@ -135,5 +137,22 @@ SelectCmd SQLParser::parseSelect() {
     advance();
   }
 
+  return cmd;
+}
+
+ShowTablesCmd SQLParser::parseShowTables() {
+  ShowTablesCmd cmd;
+  consume(TokenType::KEYWORD, "SHOW");
+  consume(TokenType::KEYWORD, "TABLES");
+  //consume(TokenType::SEMICOLON);
+  return cmd;
+}
+
+DropTableCmd SQLParser::parseDropTable() {
+  DropTableCmd cmd;
+  consume(TokenType::KEYWORD, "DROP");
+  consume(TokenType::KEYWORD, "TABLE");
+  cmd.table_name = advance().value;
+  //consume(TokenType::SEMICOLON);
   return cmd;
 }
