@@ -1,19 +1,21 @@
 #pragma once
-#include <string>
-#include <variant>
-#include <iostream>
-#include "parser.h"
-#include "commands.h"
-#include "db.h"
-#include "display.h"
 
-class Executor{
-  DB& db;
+#include <string>
+
+#include "db.h"
+#include "query_result.h"
+
+class Executor
+{
+private:
+
+    DB& db;
 
 public:
 
-  Executor(DB& _db) : db(_db){}
+    bool debug_mode = true;
 
-  void execute(const std::string& input);
+    Executor(DB& _db);
+
+    QueryResult execute(const std::string& input);
 };
-

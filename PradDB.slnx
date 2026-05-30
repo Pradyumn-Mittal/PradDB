@@ -3,5 +3,6 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="DataBase/DataBase.vcxproj" Id="e59ce1e0-7741-4650-8f27-f5bd67001e7d" />
   <Project Path="PradDB/PradDB.vcxproj" Id="d54a13be-4b68-4673-bbaf-b4d49e370bf6" />
 </Solution>

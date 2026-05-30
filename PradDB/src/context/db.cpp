@@ -206,3 +206,54 @@ bool DB::dropTable(
 
   return !ec1;
 }
+
+std::vector<Row> DB::select(
+  const std::string& tableName)
+{
+  std::vector<Row> rows;
+
+  Table* table =
+    getTable(tableName);
+
+  if (table == nullptr)
+  {
+    return rows;
+  }
+
+  TableFile tf(
+    table->filePath
+  );
+
+  auto rawRows =
+    tf.readAllRows();
+
+  for (const auto& rawRow : rawRows)
+  {
+    Row row;
+
+    for (size_t i = 0;
+      i < rawRow.size();
+      i++)
+    {
+      const auto& column =
+        table->columns[i];
+
+      if (column.type == DataType::INT)
+      {
+        row.values.push_back(
+          std::stoi(rawRow[i])
+        );
+      }
+      else
+      {
+        row.values.push_back(
+          rawRow[i]
+        );
+      }
+    }
+
+    rows.push_back(row);
+  }
+
+  return rows;
+}

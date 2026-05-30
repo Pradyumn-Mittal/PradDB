@@ -55,4 +55,6 @@ public:
   bool dropTable(
     const std::string& name);
 
+  std::vector<Row> select(
+    const std::string& tableName);
 };
