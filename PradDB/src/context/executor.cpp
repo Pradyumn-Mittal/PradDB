@@ -10,6 +10,85 @@ Executor::Executor(DB& _db)
   : db(_db)
 {}
 
+bool evaluate_condition(
+  const std::string& lhs,
+  const std::string& op,
+  const std::string& rhs,
+  bool numeric_compare
+)
+{
+  if (numeric_compare)
+  {
+    int left = std::stoi(lhs);
+
+    int right = std::stoi(rhs);
+
+    if (op == "=")
+    {
+      return left == right;
+    }
+
+    if (op == "!=")
+    {
+      return left != right;
+    }
+
+    if (op == "<")
+    {
+      return left < right;
+    }
+
+    if (op == ">")
+    {
+      return left > right;
+    }
+
+    if (op == "<=")
+    {
+      return left <= right;
+    }
+
+    if (op == ">=")
+    {
+      return left >= right;
+    }
+  }
+  else
+  {
+    if (op == "=")
+    {
+      return lhs == rhs;
+    }
+
+    if (op == "!=")
+    {
+      return lhs != rhs;
+    }
+
+    if (op == "<")
+    {
+      return lhs < rhs;
+    }
+
+    if (op == ">")
+    {
+      return lhs > rhs;
+    }
+
+    if (op == "<=")
+    {
+      return lhs <= rhs;
+    }
+
+    if (op == ">=")
+    {
+      return lhs >= rhs;
+    }
+  }
+
+  return false;
+}
+
 QueryResult Executor::execute(const std::string& input)
 {
   QueryResult result;
@@ -116,9 +195,92 @@ QueryResult Executor::execute(const std::string& input)
               command_obj.table_name
             );
 
+          std::vector<Row> filtered_rows;
+
+          if (!command_obj.condition.empty())
+          {
+            for (const auto& row : rows)
+            {
+              bool matches = true;
+
+              for (const auto& cond :
+                command_obj.condition)
+              {
+                int column_index = -1;
+
+                for (size_t i = 0;
+                  i < table->columns.size();
+                  i++)
+                {
+                  if (table->columns[i].name ==
+                    cond.column)
+                  {
+                    column_index =
+                      static_cast<int>(i);
+
+                    break;
+                  }
+                }
+
+                if (column_index == -1)
+                {
+                  matches = false;
+                  break;
+                }
+
+                const auto& cell =
+                  row.values[column_index];
+
+                std::string cell_value;
+
+                if (std::holds_alternative<int>(cell))
+                {
+                  cell_value =
+                    std::to_string(
+                      std::get<int>(cell)
+                    );
+                }
+                else
+                {
+                  cell_value =
+                    std::get<std::string>(cell);
+                }
+
+                bool numeric_compare =
+                  std::holds_alternative<int>(cell);
+
+                bool passed =
+                  evaluate_condition(
+                    cell_value,
+                    cond.op,
+                    cond.value,
+                    numeric_compare
+                  );
+
+                if (!passed)
+                {
+                  matches = false;
+
+                  break;
+                }
+              }
+
+              if (matches)
+              {
+                filtered_rows.push_back(
+                  row
+                );
+              }
+            }
+          }
+          else
+          {
+            filtered_rows = rows;
+          }
+
           result.success = true;
 
-          for (const auto& row : rows)
+          for (const auto& row : filtered_rows)
           {
             std::vector<std::string> row_data;
 
